@@ -1,0 +1,113 @@
+name: TF CI/CD
+on: 
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Manual Option Choice
+        default: "destroy"
+        required: true
+        type: choice
+        options: 
+          - apply
+          - destroy
+
+env:
+  TF_VERSION: "1.15.8"
+  
+jobs: 
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7
+
+      - name: Setup AWS Creds
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Validate, Plan
+        run: |
+          terraform init -input=false
+          terraform validate
+          terraform plan -out=tfplan
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: tfplan
+          path: tfplan
+
+  apply:
+    if: ${{ inputs.action == 'apply' }}
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: apply-approval
+
+    steps:      
+      - name: Checkout Repo
+        uses: actions/checkout@v7
+
+      - name: Setup AWS Creds
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Download tfplan Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: tfplan
+          path: .
+
+      - name: Terraform Apply
+        run: |
+          terraform init -input=false
+          terraform apply -auto-approve tfplan
+
+  destroy:
+    if: ${{ inputs.action == 'destroy' }}
+    runs-on: ubuntu-latest
+    environment: destroy-approval
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7
+
+      - name: Setup AWS Creds
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          
+      - name: Terraform Destroy
+        run: |
+          terraform init -input=false
+          terraform destroy -auto-approve
+
+
+
+
+
+
