@@ -14,7 +14,7 @@ data "aws_ami" "my_ubuntu_ami" {
 }
 
 resource "aws_key_pair" "my_k3s_instance_key_pair" {
-  key_name = aws_key_pair.my_k3s_instance_key_pair.key_name
+  key_name = var.k3s_instance_key_name
 
   public_key = "${path.module}/mtckey.pub"
   tags = {
@@ -33,7 +33,7 @@ resource "aws_instance" "my_k3s_instance" {
   ami           = data.aws_ami.my_ubuntu_ami.id
   instance_type = var.k3s_instance_type
 
-  key_name = var.k3s_instance_key_name
+  key_name = aws_key_pair.my_k3s_instance_key_pair.key_name
 
   user_data = templatefile("${path.module}/scripts/userdata.tftpl",
     {
