@@ -71,7 +71,7 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
 
       - name: Download tfplan Artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/download-artifact@v7
         with:
           name: tfplan
           path: .
