@@ -14,7 +14,7 @@ data "aws_ami" "my_ubuntu_ami" {
 }
 
 resource "aws_key_pair" "my_k3s_instance_key_pair" {
-  key_name = var.k3s_instance_key_name
+  key_name = aws_key_pair.my_k3s_instance_key_pair.key_name
 
   public_key = "${path.module}/mtckey.pub"
   tags = {
