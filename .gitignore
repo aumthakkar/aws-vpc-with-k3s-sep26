@@ -19,5 +19,4 @@ crash.*.log
 *.tfplan*
 
 # Ignore the cryptographic keys
-*key.*
-*key
+
